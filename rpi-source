@@ -21,7 +21,7 @@ import json
 DISK_USAGE_MB = 900
 
 wiki = "https://github.com/notro/rpi-source/wiki"
-script_repo = "https://github.com/notro/rpi-source"
+script_repo = "https://github.com/lifanxi/rpi-source"
 
 update_tag_file = os.path.join(os.environ.get('HOME'), '.rpi-source')
 argv = sys.argv[:]
