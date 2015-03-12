@@ -30,6 +30,8 @@ parser = argparse.ArgumentParser(description='Raspberry Pi kernel source install
                                   epilog="For more help see: %s" % wiki)
 parser.add_argument("-d", "--dest", help="Destination directory. Default is $HOME",
                     default=os.environ.get('HOME'))
+parser.add_argument("-b", "--board_type", help="For Raspberry Pi A/A+/B/B+, use 1, for Raspberry Pi 2, use 2.",
+                    default="")
 parser.add_argument("--nomake", help="Don't run 'make modules_prepare'",
                     action="store_true")
 if os.environ.get('REPO_URI'):
@@ -156,7 +158,7 @@ def do_update():
     # MOD: replace current script; do not assume script is located at /usr/bin/rpi-source; also keep ownership and permissions
     script_name = argv[0]
     info("Updating rpi-source")
-    sh("sudo wget %s https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O %s" % ("-q" if args.quiet else "", script_name))
+    sh("sudo wget %s https://raw.githubusercontent.com/lifanxi/rpi-source/master/rpi-source -O %s" % ("-q" if args.quiet else "", script_name))
     update_tag()
     info("Restarting rpi-source")
     argv.insert(0, sys.executable)
@@ -210,7 +212,10 @@ def rpi_update_method(uri):
     repo_raw = "https://raw.githubusercontent.com%s" % repo_short
 
     kernel.git_hash = download("%s/%s/git_hash" % (repo_raw, fw_rev)).strip()
-    kernel.symvers = "%s/%s/Module.symvers" % (repo_raw, fw_rev)
+    if args.board_type == "1":
+        kernel.symvers = "%s/%s/extra/Module.symvers" % (repo_raw, fw_rev)
+    else:
+        kernel.symvers = "%s/%s/extra/Module7.symvers" % (repo_raw, fw_rev)
     
     if not args.default_config:
         with gzip.open('/proc/config.gz', 'rb') as f:
@@ -235,13 +240,25 @@ def debian_method(fn):
     repo_raw = "https://raw.githubusercontent.com/raspberrypi/firmware"
 
     kernel.git_hash = download("%s/%s/extra/git_hash" % (repo_raw, fw_rev)).strip()
-    kernel.symvers = "%s/%s/extra/Module.symvers" % (repo_raw, fw_rev)
+    if args.board_type == "1":
+        kernel.symvers = "%s/%s/extra/Module.symvers" % (repo_raw, fw_rev)
+    else:
+        kernel.symvers = "%s/%s/extra/Module7.symvers" % (repo_raw, fw_rev)
 
     if not args.default_config:
         with gzip.open('/proc/config.gz', 'rb') as f:
             kernel.config = f.read()
 
     return kernel
+
+def get_board_type():
+    # Raspberry Pi A/A+/B/B+ use BMC2708 SOC
+    # Raspberry Pi 2 use BMC2709 SOC
+    ret = sh_out("grep -q BCM2709 /proc/cpuinfo ; echo $?");
+    if ret == "1":
+        return "2"
+    else:
+        return "1"
 
 ##############################################################################
 
@@ -260,6 +277,10 @@ if not os.path.isdir(args.dest):
 
 if not args.skip_gcc:
     check_gcc()
+
+if args.board_type == "":
+    args.board_type = get_board_type()
+info("Board type: %s" % args.board_type)
 
 debianlog = "/usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz"
 if os.path.exists("/boot/.firmware_revision"):
@@ -307,7 +328,10 @@ sh("sudo ln -sf %s /lib/modules/$(uname -r)/source" % linux_symlink)
 
 if args.default_config:
     info(".config (generating default)")
-    sh("cd %s && make bcmrpi_defconfig" % (linux_symlink,))
+    if args.board_type == "1":
+        sh("cd %s && make bcmrpi_defconfig" % (linux_symlink,))
+    else:
+        sh("cd %s && make bcm2709_defconfig" % (linux_symlink,))
 else:
     info(".config")
     writef(os.path.join(linux_dir, '.config'), kernel.config)
