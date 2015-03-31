@@ -256,9 +256,9 @@ def get_board_type():
     # Raspberry Pi 2 use BMC2709 SOC
     ret = sh_out("grep -q BCM2709 /proc/cpuinfo ; echo $?");
     if ret == "1":
-        return "2"
-    else:
         return "1"
+    else:
+        return "2"
 
 ##############################################################################
 
