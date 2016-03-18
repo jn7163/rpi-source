@@ -22,7 +22,7 @@ import platform
 DISK_USAGE_MB = 900
 
 wiki = "https://github.com/notro/rpi-source/wiki"
-script_repo = "https://github.com/lifanxi/rpi-source"
+script_repo = "https://github.com/notro/rpi-source"
 
 update_tag_file = os.path.join(os.environ.get('HOME'), '.rpi-source')
 argv = sys.argv[:]
@@ -31,8 +31,6 @@ parser = argparse.ArgumentParser(description='Raspberry Pi kernel source install
                                   epilog="For more help see: %s" % wiki)
 parser.add_argument("-d", "--dest", help="Destination directory. Default is $HOME",
                     default=os.environ.get('HOME'))
-parser.add_argument("-b", "--board_type", help="For Raspberry Pi A/A+/B/B+, use 1, for Raspberry Pi 2, use 2.",
-                    default="")
 parser.add_argument("--nomake", help="Don't run 'make modules_prepare'",
                     action="store_true")
 if os.environ.get('REPO_URI'):
@@ -159,7 +157,7 @@ def do_update():
     # MOD: replace current script; do not assume script is located at /usr/bin/rpi-source; also keep ownership and permissions
     script_name = argv[0]
     info("Updating rpi-source")
-    sh("sudo wget %s https://raw.githubusercontent.com/lifanxi/rpi-source/master/rpi-source -O %s" % ("-q" if args.quiet else "", script_name))
+    sh("sudo wget %s https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O %s" % ("-q" if args.quiet else "", script_name))
     update_tag()
     info("Restarting rpi-source")
     argv.insert(0, sys.executable)
@@ -227,7 +225,7 @@ def rpi_update_method(uri):
         kernel.symvers = "%s/%s/Module.symvers" % (repo_raw, fw_rev)
     else:
         kernel.symvers = "%s/%s/Module7.symvers" % (repo_raw, fw_rev)
-    
+
     if not args.default_config:
         kernel.config = proc_config_gz()
 
@@ -280,6 +278,7 @@ def debian_method(fn):
 
     return kernel
 
+
 def check_cpu():
     cpuType = platform.machine()
     if cpuType == "armv7l":
@@ -287,6 +286,7 @@ def check_cpu():
     if cpuType == "armv6l":
         return 1
     fail("Unrecognised CPU %s" % cpuType)
+
 
 ##############################################################################
 
@@ -307,10 +307,6 @@ if not os.path.isdir(args.dest):
 
 if not args.skip_gcc:
     check_gcc()
-
-if args.board_type == "":
-    args.board_type = get_board_type()
-info("Board type: %s" % args.board_type)
 
 debianlog = "/usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz"
 if os.path.exists("/boot/.firmware_revision"):
